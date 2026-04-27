@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=1.5">
+    <title>سیستم مدیریت وظایف فنی | داشبورد مدرن</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js">
+    </script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js">
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #4F6EF7;
+            --primary-light: #EEF1FE;
+            --primary-gradient: linear-gradient(135deg, #4F6EF7, #7B8FF7);
+            --secondary: #6C5DD3;
+            --success: #22C55E;
+            --success-light: #E6F9EF;
+            --warning: #F59E0B;
+            --warning-light: #FFFBEB;
+            --danger: #EF4444;
+            --danger-light: #FEF2F2;
+            --dark: #1E293B;
+            --text: #334155;
+            --text-light: #64748B;
+            --gray-50: #F8FAFC;
+            --gray-100: #F1F5F9;
+            --gray-200: #E2E8F0;
+            --gray-300: #CBD5E1;
+            --gray-600: #64748B;
+            --gray-800: #1E293B;
+            --sidebar-bg: #F8FAFC;
+            --sidebar-width: 260px;
+            --radius-sm: 12px;
+            --radius: 18px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --radius-btn: 50px;
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.10);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Vazir', Tahoma, sans-serif;
+            background: #F5F7FB;
+            color: var(--dark);
+            direction: rtl;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            background: white;
+            border-left: 1px solid var(--gray-200);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px 28px 12px;
+            border-bottom: 1px solid var(--gray-100);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--primary-gradient);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+            box-shadow: 0 4px 12px rgba(79, 110, 247, 0.3);
+        }
+
+        .sidebar-logo .logo-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--dark);
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: var(--transition);
+            border: 1.5px solid transparent;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            background: transparent;
+            position: relative;
+        }
+
+        .nav-tab i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .nav-tab:hover {
+            background: var(--gray-50);
+            color: var(--dark);
+            border-color: var(--gray-200);
+        }
+
+        .nav-tab.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(79, 110, 247, 0.12);
+        }
+
+        .nav-tab.active i {
+            color: var(--primary);
+        }
+
+        .nav-tab .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            margin-right: auto;
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--gray-100);
+            padding-top: 16px;
+            margin-top: auto;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: var(--radius);
+            background: var(--gray-50);
+            cursor: pointer;
+        }
+
+        .sidebar-user .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user .user-info {
+            overflow: hidden;
+        }
+        .sidebar-user .user-email {
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--dark);
+        }
+        .sidebar-user .role-badge {
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-right: var(--sidebar-width);
+            padding: 28px 32px;
+            min-height: 100vh;
+            width: calc(100% - var(--sidebar-width));
+            transition: var(--transition);
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-title i {
+            color: var(--primary);
+            font-size: 1.6rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 20px 18px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-card .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .stat-card .stat-icon.blue {
+            background: #EEF1FE;
+            color: #4F6EF7;
+        }
+        .stat-card .stat-icon.amber {
+            background: #FFFBEB;
+            color: #F59E0B;
+        }
+        .stat-card .stat-icon.teal {
+            background: #E6F9EF;
+            color: #22C55E;
+        }
+        .stat-card .stat-icon.indigo {
+            background: #F0EEFF;
+            color: #6C5DD3;
+        }
+
+        .stat-card .stat-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            line-height: 1;
+        }
+        .stat-card .stat-content p {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .stat-card .stat-spark {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.15;
+            font-size: 60px;
+            color: var(--primary);
+        }
+
+        /* Main Card */
+        .card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 24px 20px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            border: 1px solid var(--gray-100);
+            transition: var(--transition);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .card-header h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dark);
+        }
+
+        .card-header h2 i {
+            color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 11px 22px;
+            border-radius: var(--radius-btn);
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(79, 110, 247, 0.2);
+        }
+
+        .btn:hover {
+            box-shadow: 0 4px 16px rgba(79, 110, 247, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary);
+            border: 1.5px solid var(--gray-300);
+            box-shadow: none;
+        }
+        .btn-outline:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(79, 110, 247, 0.1);
+        }
+
+        .btn-success {
+            background: var(--success);
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+        }
+        .btn-success:hover {
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+        }
+        .btn-warning {
+            background: var(--warning);
+            color: #1e293b;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+        }
+        .btn-danger {
+            background: var(--danger);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+        }
+        .btn-sm {
+            padding: 7px 14px;
+            font-size: 0.8rem;
+            border-radius: 30px;
+            gap: 5px;
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            margin-top: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1150px;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: right;
+            padding: 14px 10px;
+            background: var(--gray-50);
+            border-bottom: 2px solid var(--gray-200);
+            font-weight: 600;
+            color: var(--text-light);
+            white-space: nowrap;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        td {
+            padding: 14px 10px;
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: middle;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
+        }
+        .clickable-row:hover {
+            background: #FAFBFF;
+        }
+
+        .highlight-row {
+            background: #FFFDF5;
+            border-right: 4px solid var(--warning);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .status-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        .status-review {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        .status-resolved {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .priority-urgent {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        .priority-normal {
+            background: #F1F5F9;
+            color: #334155;
+        }
+        .priority-medium {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            margin: 16px 0;
+            background: var(--gray-50);
+            padding: 18px 20px;
+            border-radius: var(--radius-lg);
+            display: none;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: flex-end;
+            border: 1px solid var(--gray-200);
+        }
+        .filter-bar.show {
+            display: flex;
+        }
+        .filter-group {
+            min-width: 180px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+            color: var(--text);
+            font-size: 0.85rem;
+        }
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: var(--radius);
+            background: white;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .filter-group input:focus,
+        .filter-group select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.08);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .pagination button {
+            background: white;
+            border: 1.5px solid var(--gray-200);
+            padding: 9px 18px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+            color: var(--text);
+        }
+        .pagination button:hover:not(:disabled) {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal-content {
+            background: white;
+            padding: 32px 28px;
+            border-radius: var(--radius-xl);
+            max-width: 620px;
+            width: 92%;
+            max-height: 82vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+        .modal-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .close-btn {
+            background: var(--gray-100);
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--text-light);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .close-btn:hover {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.85rem;
+        }
+        .required::after {
+            content: " *";
+            color: var(--danger);
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px 14px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            background: white;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.06);
+        }
+
+        /* User list */
+        .user-list-item {
+            background: var(--gray-50);
+            margin: 8px 0;
+            padding: 16px 18px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            border: 1px solid var(--gray-200);
+            transition: var(--transition);
+        }
+        .user-list-item:hover {
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--gray-50);
+            margin: 6px 0;
+            padding: 12px 18px;
+            border-radius: 40px;
+            border: 1px solid var(--gray-200);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .inline-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 30px;
+            border: 1.5px solid var(--gray-200);
+            font-family: inherit;
+            min-width: 140px;
+        }
+        .section-title {
+            font-size: 1.2rem;
+            margin: 24px 0 14px;
+            border-right: 4px solid var(--primary);
+            padding-right: 14px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        .password-change-box {
+            background: var(--gray-50);
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 18px;
+        }
+
+        /* Toast */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: var(--dark);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 60px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            animation: slideIn 0.3s;
+            font-weight: 500;
+        }
+        .toast-notification.success {
+            background: var(--success);
+        }
+        .toast-notification.error {
+            background: var(--danger);
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .empty-message {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+        .small-note {
+            margin-top: 14px;
+            background: var(--gray-50);
+            padding: 12px 18px;
+            border-radius: 40px;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Auth page */
+        .auth-page-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100%;
+            background: linear-gradient(135deg, #F5F7FB 0%, #EEF1FE 100%);
+        }
+        .auth-card {
+            max-width: 440px;
+            width: 90%;
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 38px 32px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--gray-200);
+        }
+        .auth-title {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 28px;
+            text-align: center;
+            color: var(--dark);
+        }
+        .auth-title i {
+            color: var(--primary);
+            margin-left: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(100%);
+                position: fixed;
+                z-index: 200;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-right: 0;
+                width: 100%;
+                padding: 20px 16px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 14px 12px;
+                gap: 10px;
+            }
+            .stat-card .stat-icon {
+                width: 38px;
+                height: 38px;
+                font-size: 18px;
+            }
+            .stat-card .stat-content h3 {
+                font-size: 1.4rem;
+            }
+            .mobile-menu-btn {
+                display: flex !important;
+            }
+            table {
+                min-width: 900px;
+            }
+            .card {
+                padding: 16px 12px;
+            }
+            .page-title {
+                font-size: 1.3rem;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius);
+            background: white;
+            border: 1.5px solid var(--gray-200);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text);
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 300;
+            box-shadow: var(--shadow-sm);
+        }
+
+        @media (min-width: 901px) {
+            .mobile-menu-btn {
+                display: none !important;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="منو">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Auth Page -->
+    <div id="auth-page" class="auth-page-wrapper" style="display:flex; width:100%;">
+        <div class="auth-card">
+            <div class="auth-title">
+                <i class="fas fa-headset"></i> ورود به پنل فنی
+            </div>
+            <form id="auth-form">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> ایمیل</label>
+                    <input type="email" id="auth-email" placeholder="example@domain.com" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> رمز عبور</label>
+                    <input type="password" id="auth-password" placeholder="********" required>
+                </div>
+                <button type="submit" class="btn" style="width:100%; margin-top:24px; justify-content:center;">
+                    <i class="fas fa-sign-in-alt"></i> ورود به سیستم
+                </button>
+            </form>
+            <div id="auth-message" style="margin-top:16px; color:#dc2626; text-align:center;"></div>
+            <div class="small-note" style="margin-top:18px; text-align:center; justify-content:center;">
+                <i class="fas fa-shield-alt"></i> فقط ادمین امکان ایجاد کاربر جدید دارد.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-page" style="display: none; width: 100%;">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon"><i class="fas fa-headset"></i></div>
+                <div class="logo-text">پنل فنی</div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-tab active" data-view="dashboard">
+                    <i class="fas fa-chart-pie"></i> داشبورد
+                </div>
+                <div class="nav-tab" data-view="employees" id="nav-employees" style="display: none;">
+                    <i class="fas fa-users-gear"></i> کاربران
+                </div>
+                <div class="nav-tab" data-view="settings">
+                    <i class="fas fa-sliders-h"></i> تنظیمات
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user" id="sidebar-user-info">
+                    <div class="avatar"><i class="fas fa-user-cog"></i></div>
+                    <div class="user-info">
+                        <div class="user-email" id="display-email-sidebar">user@example.com</div>
+                        <span class="role-badge" id="display-role-sidebar">مشاهده‌گر</span>
+                    </div>
+                </div>
+                <button class="btn btn-outline btn-sm" id="logout-btn-sidebar" style="width:100%; margin-top:10px; justify-content:center;">
+                    <i class="fas fa-sign-out-alt"></i> خروج
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Dashboard View -->
+            <div id="view-dashboard">
+                <div class="page-header">
+                    <div class="page-title">
+                        <i class="fas fa-chart-pie"></i> داشبورد
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-success" id="show-report-modal-btn">
+                            <i class="fas fa-plus-circle"></i> ثبت گزارش
+                        </button>
+                        <button class="btn btn-warning" id="manual-pdf-btn" style="display: none;">
+                            <i class="fas fa-file-pdf"></i> خروجی PDF
+                        </button>
+                        <button class="btn btn-outline btn-sm" id="toggle-filter-btn">
+                            <i class="fas fa-search"></i> جستجو
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="stats-cards">
+                    <!-- dynamically filled -->
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-clipboard-list"></i> گزارش‌های اخیر</h2>
+                    </div>
+                    <div class="filter-bar" id="filter-bar">
+                        <div class="filter-group">
+                            <label>🔍 نام مشتری</label>
+                            <input type="text" id="filter-customer-name" placeholder="جستجو ...">
+                        </div>
+                        <div class="filter-group">
+                            <label>👤 کارمند مسئول</label>
+                            <select id="filter-assigned-to">
+                                <option value="">همه</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-outline btn-sm" id="apply-filter-btn"><i class="fas fa-check"></i> اعمال</button>
+                        <button class="btn btn-outline btn-sm" id="clear-filter-btn"><i class="fas fa-times"></i> حذف فیلتر</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>مشتری</th><th>نوع</th><th>آیدی</th><th>نوع مشکل</th><th>اولویت</th><th>وضعیت / مسئول</th><th>تاریخ و ساعت</th><th>ثبت‌کننده</th><th>نوبت</th><th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-controls" class="pagination"></div>
+                    <div class="small-note">
+                        <i class="fas fa-info-circle"></i> ترتیب: در انتظار (جدیدترین) ← تحت بررسی (جدیدترین) ← حل شده.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Management -->
+            <div id="view-employees" style="display: none;">
+                <div class="page-header">
+                    <div class="page-title"><i class="fas fa-users-gear"></i> مدیریت کاربران</div>
+                </div>
+                <div class="card">
+                    <h2 style="margin-bottom:18px;"><i class="fas fa-user-plus"></i> ایجاد کاربر جدید</h2>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+                        <div class="form-group"><label>نام</label><input type="text" id="new-user-firstname" placeholder="نام"></div>
+                        <div class="form-group"><label>نام خانوادگی</label><input type="text" id="new-user-lastname" placeholder="نام خانوادگی"></div>
+                        <div class="form-group"><label>ایمیل</label><input type="email" id="new-user-email" placeholder="user@example.com"></div>
+                        <div class="form-group"><label>رمز عبور</label><input type="password" id="new-user-pass" placeholder="حداقل ۶ کاراکتر"></div>
+                        <div class="form-group"><label>نقش</label>
+                            <select id="new-user-role">
+                                <option value="technician">کارمند فنی</option>
+                                <option value="viewer">مشاهده‌گر</option>
+                                <option value="admin">ادمین</option>
+                            </select>
+                        </div>
+                        <button class="btn" id="create-user-btn"><i class="fas fa-plus"></i> ایجاد</button>
+                    </div>
+                    <div id="create-user-message" style="margin-top:14px;"></div>
+                    <h3 style="margin:24px 0 14px;"><i class="fas fa-list-ul"></i> لیست کاربران</h3>
+                    <div id="users-list-container" style="background:white; border-radius:var(--radius-lg); padding:8px;"></div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div id="view-settings" style="display: none;">
+                <div class="page-header">
+                    <div class="page-title"><i class="fas fa-sliders-h"></i> تنظیمات</div>
+                </div>
+                <div class="card">
+                    <h2><i class="fas fa-key"></i> تغییر رمز عبور</h2>
+                    <div class="password-change-box">
+                        <div class="form-group"><label>رمز فعلی</label><input type="password" id="old-password"></div>
+                        <div class="form-group"><label>رمز جدید</label><input type="password" id="new-password"></div>
+                        <div class="form-group"><label>تکرار رمز</label><input type="password" id="confirm-password"></div>
+                        <button class="btn btn-success" id="change-password-btn"><i class="fas fa-save"></i> تغییر رمز</button>
+                        <div id="password-change-message" style="margin-top:14px;"></div>
+                    </div>
+
+                    <div id="admin-settings-section" style="display: none;">
+                        <div class="section-title"><i class="fas fa-tags"></i> مدیریت نوع مشکلات</div>
+                        <div id="problem-types-container"></div>
+                        <div class="section-title"><i class="fas fa-check-circle"></i> مدیریت دلایل حل</div>
+                        <div id="resolution-cats-container"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> جزئیات گزارش</h3>
+                <button class="close-btn" onclick="closeDetailsModal()">&times;</button>
+            </div>
+            <div id="modal-details-content"></div>
+        </div>
+    </div>
+
+    <div id="resolve-modal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-check-double"></i> ثبت حل مشکل</h3>
+            <div id="resolve-ticket-info" style="background:var(--gray-50); padding:16px; border-radius:var(--radius); margin:18px 0;"></div>
+            <div class="form-group"><label>دلیل حل</label><select id="resolve-category" required></select></div>
+            <div class="form-group"><label>همکار همراه</label><select id="resolve-collaborator"><option value="">بدون همکار</option></select></div>
+            <div class="form-group"><label>توضیحات</label><textarea id="resolve-note" rows="2"></textarea></div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+                <button class="btn btn-outline" onclick="closeResolveModal()">انصراف</button>
+                <button class="btn btn-success" id="confirm-resolve-btn">ثبت</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Report Modal -->
+    <div id="new-report-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-pen-alt"></i> گزارش جدید</h3>
+                <button class="close-btn" onclick="closeNewReportModal()">&times;</button>
+            </div>
+            <form id="report-form">
+                <div class="form-grid">
+                    <div class="form-group"><label class="required">نام مشتری</label><input id="cust-name" required></div>
+                    <div class="form-group"><label>نوع مشتری</label><select id="cust-type"><option value="مشتری فامیلی">مشتری فامیلی</option><option value="هاتسپات">هاتسپات</option></select></div>
+                    <div class="form-group"><label>آیدی مشتری</label><input id="cust-id"></div>
+                    <div class="form-group"><label class="required">نوع مشکل</label><select id="prob-type" required></select></div>
+                    <div class="form-group"><label>اولویت</label><select id="priority-select"><option value="normal">عادی</option><option value="medium">متوسط</option><option value="urgent">عاجل</option></select></div>
+                    <div class="form-group"><label>تاریخ</label><input type="date" id="rep-date"></div>
+                    <div class="form-group"><label>آدرس</label><input id="rep-address"></div>
+                </div>
+                <div class="form-group" style="margin-top:14px;">
+                    <label>یادداشت</label>
+                    <textarea id="rep-note" rows="3" style="width:100%;"></textarea>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> ثبت</button>
+                    <button type="button" class="btn btn-outline" onclick="closeNewReportModal()">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Report Modal -->
+    <div id="edit-report-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> ویرایش گزارش</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="edit-report-form">
+                <div class="form-grid">
+                    <div class="form-group"><label class="required">نام مشتری</label><input id="edit-cust-name" required></div>
+                    <div class="form-group"><label>نوع مشتری</label><select id="edit-cust-type"><option value="مشتری فامیلی">مشتری فامیلی</option><option value="هاتسپات">هاتسپات</option></select></div>
+                    <div class="form-group"><label>آیدی مشتری</label><input id="edit-cust-id"></div>
+                    <div class="form-group"><label class="required">نوع مشکل</label><select id="edit-prob-type" required></select></div>
+                    <div class="form-group"><label>اولویت</label><select id="edit-priority"><option value="normal">عادی</option><option value="medium">متوسط</option><option value="urgent">عاجل</option></select></div>
+                    <div class="form-group"><label>تاریخ</label><input type="date" id="edit-rep-date"></div>
+                    <div class="form-group"><label>آدرس</label><input id="edit-address"></div>
+                </div>
+                <div class="form-group" style="margin-top:14px;">
+                    <label>یادداشت</label>
+                    <textarea id="edit-note" rows="3" style="width:100%;"></textarea>
+                </div>
+                <input type="hidden" id="edit-ticket-id">
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> ذخیره تغییرات</button>
+                    <button type="button" class="btn btn-outline" onclick="closeEditModal()">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden legacy refs for JS compatibility -->
+    <span id="display-email" style="display:none;"></span>
+    <span id="display-role" style="display:none;"></span>
+    <button id="logout-btn" style="display:none;"></button>
+
+    <script>
+        (function() {
+            const firebaseConfig = {
+                apiKey: "AIzaSyANK0-HKXI-xYxTAF9tcduTDIUCpGTPHs0",
+                authDomain: "ticket-manager-42739.firebaseapp.com",
+                projectId: "ticket-manager-42739",
+                storageBucket: "ticket-manager-42739.firebasestorage.app",
+                messagingSenderId: "424394507100",
+                appId: "1:424394507100:web:f84a070bbeabb533017799"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+            const secondaryAuth = secondaryApp.auth();
+            const auth = firebase.auth();
+            const database = firebase.database();
+
+            let currentUser = null,
+                currentUserRole = 'viewer';
+            let ticketsRef = null;
+            let allTicketsArray = [];
+            let currentPage = 1;
+            const itemsPerPage = 10;
+            let filterName = '',
+                filterAssignedTo = '';
+            const LAST_CLEANUP_KEY = 'lastMonthlyCleanup';
+            let userDisplayNameMap = {};
+
+            function getUserDisplayName(email) {
+                if (!email) return '—';
+                return userDisplayNameMap[email] || email;
+            }
+
+            // DOM elements
+            const authPage = document.getElementById('auth-page'),
+                appPage = document.getElementById('app-page');
+            const authForm = document.getElementById('auth-form'),
+                authEmail = document.getElementById('auth-email'),
+                authPassword = document.getElementById('auth-password'),
+                authMessage = document.getElementById('auth-message');
+            const logoutBtn = document.getElementById('logout-btn'),
+                logoutBtnSidebar = document.getElementById('logout-btn-sidebar');
+            const displayEmailSpan = document.getElementById('display-email'),
+                displayRoleSpan = document.getElementById('display-role');
+            const displayEmailSidebar = document.getElementById('display-email-sidebar'),
+                displayRoleSidebar = document.getElementById('display-role-sidebar');
+            const navEmployees = document.getElementById('nav-employees'),
+                viewDashboard = document.getElementById('view-dashboard'),
+                viewEmployees = document.getElementById('view-employees'),
+                viewSettings = document.getElementById('view-settings');
+            const navItems = document.querySelectorAll('.nav-tab'),
+                dashboardTbody = document.getElementById('dashboard-tbody');
+            const showReportModalBtn = document.getElementById('show-report-modal-btn');
+            const newReportModal = document.getElementById('new-report-modal'),
+                editReportModal = document.getElementById('edit-report-modal');
+            const reportForm = document.getElementById('report-form'),
+                custName = document.getElementById('cust-name'),
+                custId = document.getElementById('cust-id'),
+                custType = document.getElementById('cust-type');
+            const probTypeSelect = document.getElementById('prob-type'),
+                prioritySelect = document.getElementById('priority-select'),
+                repDate = document.getElementById('rep-date'),
+                repAddress = document.getElementById('rep-address'),
+                repNote = document.getElementById('rep-note');
+            const editReportForm = document.getElementById('edit-report-form'),
+                editCustName = document.getElementById('edit-cust-name'),
+                editCustType = document.getElementById('edit-cust-type'),
+                editCustId = document.getElementById('edit-cust-id'),
+                editProbType = document.getElementById('edit-prob-type'),
+                editPriority = document.getElementById('edit-priority'),
+                editRepDate = document.getElementById('edit-rep-date'),
+                editAddress = document.getElementById('edit-address'),
+                editNote = document.getElementById('edit-note'),
+                editTicketId = document.getElementById('edit-ticket-id');
+            const newUserEmail = document.getElementById('new-user-email'),
+                newUserPass = document.getElementById('new-user-pass'),
+                newUserRole = document.getElementById('new-user-role'),
+                newUserFirstname = document.getElementById('new-user-firstname'),
+                newUserLastname = document.getElementById('new-user-lastname');
+            const createUserBtn = document.getElementById('create-user-btn'),
+                createUserMsg = document.getElementById('create-user-message'),
+                usersListContainer = document.getElementById('users-list-container');
+            const detailsModal = document.getElementById('details-modal'),
+                modalDetailsContent = document.getElementById('modal-details-content');
+            const resolveModal = document.getElementById('resolve-modal'),
+                resolveTicketInfo = document.getElementById('resolve-ticket-info'),
+                resolveNote = document.getElementById('resolve-note'),
+                resolveCategory = document.getElementById('resolve-category'),
+                resolveCollaborator = document.getElementById('resolve-collaborator'),
+                confirmResolveBtn = document.getElementById('confirm-resolve-btn');
+            let currentResolveTicketId = null;
+            const paginationDiv = document.getElementById('pagination-controls');
+            const filterCustomerName = document.getElementById('filter-customer-name');
+            const filterAssignedSelect = document.getElementById('filter-assigned-to');
+            const applyFilterBtn = document.getElementById('apply-filter-btn');
+            const clearFilterBtn = document.getElementById('clear-filter-btn');
+            const toggleFilterBtn = document.getElementById('toggle-filter-btn');
+            const filterBar = document.getElementById('filter-bar');
+            const manualPdfBtn = document.getElementById('manual-pdf-btn');
+            const problemTypesContainer = document.getElementById('problem-types-container');
+            const resolutionCatsContainer = document.getElementById('resolution-cats-container');
+            const adminSettingsSection = document.getElementById('admin-settings-section');
+            const oldPasswordInput = document.getElementById('old-password');
+            const newPasswordInput = document.getElementById('new-password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const changePasswordBtn = document.getElementById('change-password-btn');
+            const passwordChangeMsg = document.getElementById('password-change-message');
+            const statsCardsDiv = document.getElementById('stats-cards');
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+
+            // Mobile menu toggle
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+            // Close sidebar when clicking main content on mobile
+            document.getElementById('main-content').addEventListener('click', () => {
+                if (window.innerWidth <= 900) sidebar.classList.remove('open');
+            });
+
+            // Helpers
+            function getToday() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+            function getTomorrow() { const d = new Date();
+                d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+            function getCurrentDateTimeISO() { return new Date().toISOString(); }
+
+            function format12HourTime(isoString) {
+                if (!isoString) return '—';
+                const date = new Date(isoString);
+                let hours = date.getHours();
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                return `${hours}:${minutes} ${ampm}`;
+            }
+
+            function formatDateAndTime(isoString) {
+                if (!isoString) return '—';
+                const d = new Date(isoString);
+                const datePart =
+                    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                return `${datePart} ${format12HourTime(isoString)}`;
+            }
+
+            function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div');
+                div.textContent = text; return div.innerHTML; }
+
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast-notification ${type}`;
+                toast.innerHTML =
+                    `<span>${escapeHtml(message)}</span><button style="background:none; border:none; color:white; font-weight:bold; margin-right:8px; cursor:pointer; font-size:16px;">✖</button>`;
+                document.body.appendChild(toast);
+                toast.querySelector('button').onclick = () => toast.remove();
+                setTimeout(() => toast.remove(), 5000);
+            }
+
+            function formatDuration(startISO, endISO) {
+                if (!startISO || !endISO) return '—';
+                const start = new Date(startISO);
+                const end = new Date(endISO);
+                const diffSeconds = Math.abs((end - start) / 1000);
+                if (diffSeconds < 60) return `${Math.floor(diffSeconds)} ثانیه`;
+                if (diffSeconds < 3600) { const m = Math.floor(diffSeconds / 60); const s = Math.floor(diffSeconds % 60); return `${m} دقیقه و ${s} ثانیه`; }
+                const hours = Math.floor(diffSeconds / 3600);
+                const minutes = Math.floor((diffSeconds % 3600) / 60);
+                return `${hours} ساعت و ${minutes} دقیقه`;
+            }
+
+            function updateUserDisplayMap(users) {
+                const map = {};
+                for (const uid in users) {
+                    const u = users[uid];
+                    const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || '';
+                    map[u.email] = name || u.email;
+                }
+                userDisplayNameMap = map;
+            }
+
+            function loadProblemTypes() {
+                database.ref('settings/problemTypes').on('value', (snap) => {
+                    let types = snap.val() || ['اینترنت', 'دستگاه', 'انستالیشن جدید', 'سایر موارد'];
+                    if (!Array.isArray(types)) types = Object.values(types);
+                    const optionsHtml = types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`)
+                        .join('');
+                    probTypeSelect.innerHTML = optionsHtml;
+                    editProbType.innerHTML = optionsHtml;
+                    if (currentUserRole === 'admin') renderProblemTypesEditor(types);
+                });
+            }
+
+            function loadResolutionCategories() {
+                database.ref('settings/resolutionCategories').on('value', (snap) => {
+                    let cats = snap.val() || ['سیگنال ضعیف بود', 'روتر دوباره تنظیم شد', 'لین تبدیل شد',
+                        'تغییر موقعیت داده شد', 'انستالیشن جدید'
+                    ];
+                    if (!Array.isArray(cats)) cats = Object.values(cats);
+                    const optionsHtml = cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+                        .join('');
+                    resolveCategory.innerHTML = optionsHtml;
+                    if (currentUserRole === 'admin') renderResolutionCatsEditor(cats);
+                });
+            }
+
+            function renderProblemTypesEditor(types) {
+                if (!problemTypesContainer) return;
+                problemTypesContainer.innerHTML =
+                    `<div style="margin-bottom:12px; display:flex; gap:8px;"><input type="text" id="new-problem-type" placeholder="نوع جدید" class="inline-input"><button class="btn-sm btn" id="add-problem-type-btn"><i class="fas fa-plus"></i> افزودن</button></div><div id="problem-types-list"></div>`;
+                const listDiv = document.getElementById('problem-types-list');
+                listDiv.innerHTML = types.map((t, idx) =>
+                    `<div class="setting-item"><span>${escapeHtml(t)}</span><div class="setting-actions"><button class="btn-sm btn-outline edit-problem-type" data-value="${escapeHtml(t)}" data-index="${idx}"><i class="fas fa-edit"></i> ویرایش</button><button class="btn-sm btn-danger remove-problem-type" data-value="${escapeHtml(t)}"><i class="fas fa-trash"></i> حذف</button></div></div>`
+                ).join('');
+                document.getElementById('add-problem-type-btn')?.addEventListener('click', async () => {
+                    const newVal = document.getElementById('new-problem-type').value.trim();
+                    if (!newVal) return showToast('مقدار وارد کنید', 'error');
+                    const current = (await database.ref('settings/problemTypes').once('value')).val() || [];
+                    const updated = [...current, newVal];
+                    await database.ref('settings/problemTypes').set(updated);
+                    document.getElementById('new-problem-type').value = '';
+                    showToast('نوع مشکل اضافه شد', 'success');
+                });
+                document.querySelectorAll('.remove-problem-type').forEach(btn => btn.addEventListener('click',
+                    async (e) => {
+                        const val = btn.dataset.value;
+                        const current = (await database.ref('settings/problemTypes').once('value')).val() || [];
+                        const updated = current.filter(v => v !== val);
+                        await database.ref('settings/problemTypes').set(updated);
+                        showToast('حذف شد', 'success');
+                    }));
+                document.querySelectorAll('.edit-problem-type').forEach(btn => btn.addEventListener('click',
+                    async () => {
+                        const oldVal = btn.dataset.value;
+                        const newVal = prompt('ویرایش مقدار:', oldVal);
+                        if (newVal && newVal !== oldVal) {
+                            const current = (await database.ref('settings/problemTypes').once('value')).val() ||
+                                [];
+                            const idx = current.findIndex(v => v === oldVal);
+                            if (idx !== -1) { current[idx] = newVal; await database.ref(
+                                    'settings/problemTypes').set(current);
+                                showToast('ویرایش شد', 'success'); }
+                        }
+                    }));
+            }
+
+            function renderResolutionCatsEditor(cats) {
+                if (!resolutionCatsContainer) return;
+                resolutionCatsContainer.innerHTML =
+                    `<div style="margin-bottom:12px; display:flex; gap:8px;"><input type="text" id="new-res-cat" placeholder="دلیل جدید" class="inline-input"><button class="btn-sm btn" id="add-res-cat-btn"><i class="fas fa-plus"></i> افزودن</button></div><div id="res-cats-list"></div>`;
+                const listDiv = document.getElementById('res-cats-list');
+                listDiv.innerHTML = cats.map((c, idx) =>
+                    `<div class="setting-item"><span>${escapeHtml(c)}</span><div class="setting-actions"><button class="btn-sm btn-outline edit-res-cat" data-value="${escapeHtml(c)}" data-index="${idx}"><i class="fas fa-edit"></i> ویرایش</button><button class="btn-sm btn-danger remove-res-cat" data-value="${escapeHtml(c)}"><i class="fas fa-trash"></i> حذف</button></div></div>`
+                ).join('');
+                document.getElementById('add-res-cat-btn')?.addEventListener('click', async () => {
+                    const newVal = document.getElementById('new-res-cat').value.trim();
+                    if (!newVal) return showToast('مقدار وارد کنید', 'error');
+                    const current = (await database.ref('settings/resolutionCategories').once('value')).val() ||
+                        [];
+                    const updated = [...current, newVal];
+                    await database.ref('settings/resolutionCategories').set(updated);
+                    document.getElementById('new-res-cat').value = '';
+                    showToast('دلیل حل اضافه شد', 'success');
+                });
+                document.querySelectorAll('.remove-res-cat').forEach(btn => btn.addEventListener('click',
+                    async () => {
+                        const val = btn.dataset.value;
+                        const current = (await database.ref('settings/resolutionCategories').once('value'))
+                            .val() || [];
+                        const updated = current.filter(v => v !== val);
+                        await database.ref('settings/resolutionCategories').set(updated);
+                        showToast('حذف شد', 'success');
+                    }));
+                document.querySelectorAll('.edit-res-cat').forEach(btn => btn.addEventListener('click', async () => {
+                    const oldVal = btn.dataset.value;
+                    const newVal = prompt('ویرایش مقدار:', oldVal);
+                    if (newVal && newVal !== oldVal) {
+                        const current = (await database.ref('settings/resolutionCategories').once('value'))
+                            .val() || [];
+                        const idx = current.findIndex(v => v === oldVal);
+                        if (idx !== -1) { current[idx] = newVal; await database.ref(
+                                'settings/resolutionCategories').set(current);
+                            showToast('ویرایش شد', 'success'); }
+                    }
+                }));
+            }
+
+            async function fetchUserRole(uid, email) {
+                const roleSnap = await database.ref(`users/${uid}/role`).once('value');
+                let role = roleSnap.val();
+                if (!role) { role = (email && email.includes('admin')) ? 'admin' : 'viewer'; await database.ref(
+                        `users/${uid}`).set({ email, role, createdAt: new Date().toISOString() }); }
+                return role;
+            }
+
+            function updateStatsCards() {
+                const today = getToday();
+                const filtered = allTicketsArray.filter(t =>
+                    (!filterName || (t.customerName && t.customerName.includes(filterName))) &&
+                    (!filterAssignedTo || t.assignedTo === filterAssignedTo)
+                );
+                const pending = filtered.filter(t => t.status === 'pending').length;
+                const review = filtered.filter(t => t.status === 'under_review').length;
+                const resolved = filtered.filter(t => t.status === 'resolved' && t.resolvedAt && t.resolvedAt.slice(0,
+                    10) === today).length;
+                const total = pending + review + resolved;
+                statsCardsDiv.innerHTML = `
+                <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-calendar-day"></i></div><div class="stat-content"><h3>${total}</h3><p>کل (انباشته)</p></div><div class="stat-spark"><i class="fas fa-layer-group"></i></div></div>
+                <div class="stat-card"><div class="stat-icon amber"><i class="fas fa-clock"></i></div><div class="stat-content"><h3>${pending}</h3><p>در انتظار</p></div><div class="stat-spark"><i class="fas fa-hourglass-half"></i></div></div>
+                <div class="stat-card"><div class="stat-icon indigo"><i class="fas fa-search"></i></div><div class="stat-content"><h3>${review}</h3><p>تحت بررسی</p></div><div class="stat-spark"><i class="fas fa-spinner"></i></div></div>
+                <div class="stat-card"><div class="stat-icon teal"><i class="fas fa-check-circle"></i></div><div class="stat-content"><h3>${resolved}</h3><p>حل شده امروز</p></div><div class="stat-spark"><i class="fas fa-check-double"></i></div></div>
+            `;
+            }
+
+            function loadTicketsRealtime() {
+                if (ticketsRef) database.ref('tickets').off();
+                ticketsRef = database.ref('tickets');
+                ticketsRef.on('value', async (snapshot) => {
+                    const ticketsData = snapshot.val() || {};
+                    allTicketsArray = Object.entries(ticketsData).map(([id, data]) => ({ id,
+                        ...data }));
+                    await applyAutoScheduling();
+                    const freshSnap = await database.ref('tickets').once('value');
+                    allTicketsArray = Object.entries(freshSnap.val() || {}).map(([id, data]) => ({ id,
+                        ...data }));
+                    updateStatsCards();
+                    renderDashboardWithPagination();
+                    populateAssignedToFilter();
+                    await checkAndPerformMonthlyCleanup();
+                });
+            }
+            async function applyAutoScheduling() {
+                const today = getToday(),
+                    tomorrow = getTomorrow();
+                const updates = {};
+                for (const ticket of allTicketsArray) {
+                    if (ticket.status === 'pending' && ticket.createdAt <= today && (!ticket.scheduledDate || ticket
+                            .scheduledDate < tomorrow))
+                        updates[`tickets/${ticket.id}/scheduledDate`] = tomorrow;
+                }
+                if (Object.keys(updates).length) await database.ref().update(updates);
+            }
+            async function checkAndPerformMonthlyCleanup() {
+                if (currentUserRole !== 'admin') return;
+                const now = new Date();
+                const currentMonth = now.getMonth(),
+                    currentYear = now.getFullYear();
+                const lastCleanupSnap = await database.ref(`settings/${LAST_CLEANUP_KEY}`).once('value');
+                const lastCleanup = lastCleanupSnap.val();
+                let shouldCleanup = (!lastCleanup) || (new Date(lastCleanup).getMonth() !== currentMonth || new Date(
+                    lastCleanup).getFullYear() !== currentYear);
+                if (!shouldCleanup) return;
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                const oldTickets = allTicketsArray.filter(t => t.createdAt && new Date(t.createdAt) < oneMonthAgo);
+                if (oldTickets.length > 0) {
+                    await generatePDF(oldTickets, 'گزارش-پایان-ماه');
+                    const updates = {};
+                    oldTickets.forEach(t => updates[`tickets/${t.id}`] = null);
+                    await database.ref().update(updates);
+                    showToast(`${oldTickets.length} گزارش قدیمی حذف و PDF ذخیره شد`, 'success');
+                }
+                await database.ref(`settings/${LAST_CLEANUP_KEY}`).set(now.toISOString());
+            }
+
+            function customSort(tickets) {
+                const statusOrder = { 'pending': 0, 'under_review': 1, 'resolved': 2 };
+                return [...tickets].sort((a, b) => {
+                    if (statusOrder[a.status] !== statusOrder[b.status]) return statusOrder[a.status] -
+                        statusOrder[b.status];
+                    const dateA = a.createdAtFull || a.createdAt || '';
+                    const dateB = b.createdAtFull || b.createdAt || '';
+                    return dateB.localeCompare(dateA);
+                });
+            }
+
+            function applyFilters(tickets) {
+                return tickets.filter(t => (!filterName || (t.customerName && t.customerName.includes(filterName))) && (
+                    !filterAssignedTo || t.assignedTo === filterAssignedTo));
+            }
+
+            function renderDashboardWithPagination() {
+                const filtered = applyFilters(allTicketsArray);
+                const sorted = customSort(filtered);
+                const totalPages = Math.ceil(sorted.length / itemsPerPage) || 1;
+                if (currentPage > totalPages) currentPage = totalPages;
+                const start = (currentPage - 1) * itemsPerPage;
+                const pageItems = sorted.slice(start, start + itemsPerPage);
+                renderTableBody(pageItems);
+                renderPaginationControls(totalPages);
+            }
+
+            function renderTableBody(tickets) {
+                if (!tickets.length) { dashboardTbody.innerHTML =
+                        `<tr><td colspan="10" class="empty-message"><i class="fas fa-inbox"></i> هیچ گزارشی نیست</td></tr>`;
+                    return; }
+                let html = '';
+                tickets.forEach(t => {
+                    const rowClass = (t.scheduledDate === getTomorrow() && t.status === 'pending') ?
+                        'highlight-row' : '';
+                    let statusHtml = '',
+                        actionButtons = '';
+                    const isAdmin = currentUserRole === 'admin',
+                        isTech = currentUserRole === 'technician',
+                        isAssignedToMe = t.assignedTo === currentUser?.email;
+                    const priorityMap = { 'normal': 'عادی', 'medium': 'متوسط', 'urgent': 'عاجل' };
+                    const priorityText = priorityMap[t.priority] || 'عادی';
+                    const priorityClass = `priority-${t.priority || 'normal'}`;
+                    const dateTimeDisplay = formatDateAndTime(t.createdAtFull || t.createdAt);
+                    const createdByDisplay = getUserDisplayName(t.createdBy);
+                    if (t.status === 'pending') {
+                        statusHtml =
+                            `<span class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> در انتظار</span>`;
+                        if (isAdmin || isTech) actionButtons =
+                            `<button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); acceptTicket('${t.id}')"><i class="fas fa-check"></i> قبول</button>`;
+                        else actionButtons = `—`;
+                        if (isAdmin) actionButtons +=
+                            ` <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditModal('${t.id}')"><i class="fas fa-edit"></i></button>`;
+                    } else if (t.status === 'under_review') {
+                        statusHtml =
+                            `<span class="status-badge status-review"><i class="fas fa-spinner"></i> تحت بررسی توسط ${getUserDisplayName(t.assignedTo)}</span>`;
+                        if (isAdmin || (isTech && isAssignedToMe)) actionButtons =
+                            `<button class="btn btn-success btn-sm" onclick="event.stopPropagation(); openResolveModal('${t.id}')"><i class="fas fa-check-double"></i> حل</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); rejectToPending('${t.id}')"><i class="fas fa-times"></i> برگشت</button>`;
+                        else actionButtons = `در حال بررسی`;
+                        if (isAdmin) actionButtons +=
+                            ` <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditModal('${t.id}')"><i class="fas fa-edit"></i></button>`;
+                    } else {
+                        statusHtml =
+                            `<span class="status-badge status-resolved"><i class="fas fa-check-circle"></i> حل شده</span>`;
+                        const resolverName = getUserDisplayName(t.resolvedBy);
+                        const collabName = t.collaborator ? ` + همکار: ${getUserDisplayName(t.collaborator)}` :
+                            '';
+                        actionButtons = `توسط ${resolverName}${collabName}`;
+                    }
+                    html += `<tr class="clickable-row ${rowClass}" onclick="showTicketDetails('${t.id}')">
+                    <td>${escapeHtml(t.customerName)}</td>
+                    <td>${escapeHtml(t.customerType || 'مشتری فامیلی')}</td>
+                    <td>${escapeHtml(t.customerId) || '—'}</td>
+                    <td>${escapeHtml(t.problemType)}</td>
+                    <td><span class="status-badge ${priorityClass}">${priorityText}</span></td>
+                    <td>${statusHtml}</td>
+                    <td>${dateTimeDisplay}</td>
+                    <td>${createdByDisplay}</td>
+                    <td>${t.scheduledDate || '—'}</td>
+                    <td onclick="event.stopPropagation()" class="action-buttons">${actionButtons}</td>
+                 </tr>`;
+                });
+                dashboardTbody.innerHTML = html;
+            }
+
+            function renderPaginationControls(totalPages) {
+                if (totalPages <= 1) { paginationDiv.innerHTML = ''; return; }
+                paginationDiv.innerHTML =
+                    `<button id="page-first" ${currentPage===1?'disabled':''}><i class="fas fa-angle-double-right"></i> اول</button><button id="page-prev" ${currentPage===1?'disabled':''}><i class="fas fa-angle-right"></i> قبلی</button><span>صفحه ${currentPage} از ${totalPages}</span><button id="page-next" ${currentPage===totalPages?'disabled':''}>بعدی <i class="fas fa-angle-left"></i></button><button id="page-last" ${currentPage===totalPages?'disabled':''}>آخر <i class="fas fa-angle-double-left"></i></button>`;
+                document.getElementById('page-first')?.addEventListener('click', () => { currentPage = 1;
+                    renderDashboardWithPagination(); });
+                document.getElementById('page-prev')?.addEventListener('click', () => { if (currentPage > 1)
+                        currentPage--;
+                    renderDashboardWithPagination(); });
+                document.getElementById('page-next')?.addEventListener('click', () => { if (currentPage < totalPages)
+                        currentPage++;
+                    renderDashboardWithPagination(); });
+                document.getElementById('page-last')?.addEventListener('click', () => { currentPage = totalPages;
+                    renderDashboardWithPagination(); });
+            }
+            async function populateAssignedToFilter() {
+                const usersSnap = await database.ref('users').once('value');
+                const users = usersSnap.val() || {};
+                let options = '<option value="">همه</option>';
+                for (let uid in users) {
+                    const u = users[uid];
+                    if (u.email) {
+                        const name = getUserDisplayName(u.email);
+                        options +=
+                            `<option value="${escapeHtml(u.email)}">${escapeHtml(name)}</option>`;
+                    }
+                }
+                filterAssignedSelect.innerHTML = options;
+                let collabOptions = '<option value="">بدون همکار</option>';
+                for (let uid in users) {
+                    const email = users[uid].email;
+                    const role = users[uid].role;
+                    if (email && (role === 'technician' || role === 'admin')) {
+                        collabOptions +=
+                            `<option value="${escapeHtml(email)}">${escapeHtml(getUserDisplayName(email))}</option>`;
+                    }
+                }
+                resolveCollaborator.innerHTML = collabOptions;
+            }
+
+            applyFilterBtn.addEventListener('click', () => {
+                filterName = filterCustomerName.value.trim();
+                filterAssignedTo = filterAssignedSelect.value;
+                currentPage = 1;
+                renderDashboardWithPagination();
+                updateStatsCards();
+            });
+            clearFilterBtn.addEventListener('click', () => {
+                filterCustomerName.value = '';
+                filterAssignedSelect.value = '';
+                filterName = '';
+                filterAssignedTo = '';
+                currentPage = 1;
+                renderDashboardWithPagination();
+                updateStatsCards();
+            });
+            toggleFilterBtn.addEventListener('click', () => { filterBar.classList.toggle('show'); });
+
+            window.acceptTicket = async function(ticketId) {
+                if (!['admin', 'technician'].includes(currentUserRole)) return;
+                await database.ref(`tickets/${ticketId}`).update({
+                    status: 'under_review',
+                    assignedTo: currentUser.email,
+                    assignedAt: new Date().toISOString(),
+                    scheduledDate: null
+                });
+            };
+            window.rejectToPending = async function(ticketId) {
+                if (!confirm('آیا این گزارش حل نشده است؟')) return;
+                await database.ref(`tickets/${ticketId}`).update({
+                    status: 'pending',
+                    assignedTo: null,
+                    assignedAt: null,
+                    resolvedAt: null,
+                    resolvedBy: null,
+                    resolutionNote: '',
+                    resolutionCategory: null,
+                    scheduledDate: getTomorrow()
+                });
+            };
+            window.openResolveModal = async function(ticketId) {
+                currentResolveTicketId = ticketId;
+                const snap = await database.ref(`tickets/${ticketId}`).once('value');
+                const t = snap.val();
+                resolveTicketInfo.innerHTML =
+                    `<strong>${escapeHtml(t.customerName)}</strong> (${escapeHtml(t.customerId) || 'بدون آیدی'})<br>نوع: ${escapeHtml(t.problemType)}`;
+                resolveNote.value = t.resolutionNote || '';
+                resolveCategory.value = t.resolutionCategory || '';
+                resolveCollaborator.value = t.collaborator || '';
+                resolveModal.style.display = 'flex';
+            };
+            window.closeResolveModal = () => { resolveModal.style.display = 'none';
+                currentResolveTicketId = null; };
+            confirmResolveBtn.addEventListener('click', async () => {
+                if (!currentResolveTicketId) return;
+                if (!resolveCategory.value) { alert('لطفاً دلیل حل را انتخاب کنید'); return; }
+                await database.ref(`tickets/${currentResolveTicketId}`).update({
+                    status: 'resolved',
+                    resolvedAt: new Date().toISOString(),
+                    resolvedBy: currentUser.email,
+                    resolutionNote: resolveNote.value.trim(),
+                    resolutionCategory: resolveCategory.value,
+                    collaborator: resolveCollaborator.value || null,
+                    scheduledDate: null
+                });
+                closeResolveModal();
+            });
+            window.showTicketDetails = async (ticketId) => {
+                const snap = await database.ref(`tickets/${ticketId}`).once('value');
+                const t = snap.val();
+                const priorityMap = { 'normal': 'عادی', 'medium': 'متوسط', 'urgent': 'عاجل' };
+                let durationHtml = '';
+                if (t.status === 'under_review' && t.assignedAt) {
+                    durationHtml =
+                        `<p><strong>⏱️ زمان سپری شده از قبول:</strong> ${formatDuration(t.assignedAt, new Date().toISOString())} (در حال بررسی)</p>`;
+                } else if (t.status === 'resolved' && t.assignedAt && t.resolvedAt) {
+                    durationHtml =
+                        `<p><strong>⏱️ مدت زمان حل:</strong> ${formatDuration(t.assignedAt, t.resolvedAt)}</p>`;
+                }
+                modalDetailsContent.innerHTML =
+                    `<p><strong>مشتری:</strong> ${escapeHtml(t.customerName)} (${escapeHtml(t.customerType||'مشتری فامیلی')}) (آیدی: ${escapeHtml(t.customerId) || '—'})</p>
+                <p><strong>نوع مشکل:</strong> ${escapeHtml(t.problemType)} | اولویت: ${priorityMap[t.priority]||'عادی'}</p>
+                <p><strong>تاریخ و ساعت ثبت:</strong> ${formatDateAndTime(t.createdAtFull || t.createdAt)}</p>
+                <p><strong>ثبت‌کننده:</strong> ${getUserDisplayName(t.createdBy)}</p>
+                <p><strong>وضعیت:</strong> ${t.status==='pending'?'در انتظار':(t.status==='under_review'?'تحت بررسی':'حل شده')}</p>
+                <p><strong>مسئول:</strong> ${getUserDisplayName(t.assignedTo)} ${t.collaborator ? `<br><strong>همکار همراه:</strong> ${getUserDisplayName(t.collaborator)}` : ''}</p>
+                ${durationHtml}
+                <p><strong>یادداشت:</strong> ${escapeHtml(t.note) || '—'}</p>
+                <p><strong>یادداشت فنی:</strong> ${escapeHtml(t.resolutionNote) || '—'}</p>`;
+                detailsModal.style.display = 'flex';
+            };
+            window.closeDetailsModal = () => detailsModal.style.display = 'none';
+
+            function closeNewReportModal() {
+                newReportModal.style.display = 'none';
+                reportForm.reset();
+                repDate.value = getToday();
+                repNote.value = '';
+            }
+            showReportModalBtn.addEventListener('click', () => {
+                newReportModal.style.display = 'flex';
+                repDate.value = getToday();
+                repNote.value = '';
+            });
+            reportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!custName.value.trim() || !probTypeSelect.value) { alert(
+                        'نام مشتری و نوع مشکل اجباری است'); return; }
+                const nowISO = getCurrentDateTimeISO();
+                const newTicket = {
+                    customerName: custName.value.trim(),
+                    customerType: custType.value,
+                    customerId: custId.value.trim() || null,
+                    problemType: probTypeSelect.value,
+                    priority: prioritySelect.value,
+                    address: repAddress.value.trim() || null,
+                    note: repNote.value.trim() || null,
+                    createdAt: repDate.value || getToday(),
+                    createdAtFull: nowISO,
+                    createdBy: currentUser.email,
+                    status: 'pending',
+                    assignedTo: null,
+                    assignedAt: null,
+                    resolvedAt: null,
+                    resolvedBy: null,
+                    resolutionNote: '',
+                    resolutionCategory: null,
+                    scheduledDate: null,
+                    collaborator: null
+                };
+                await database.ref('tickets').push().set(newTicket);
+                showToast('گزارش با موفقیت ثبت شد.', 'success');
+                closeNewReportModal();
+            });
+
+            window.openEditModal = async function(ticketId) {
+                const snap = await database.ref(`tickets/${ticketId}`).once('value');
+                const t = snap.val();
+                if (!t || (t.status !== 'pending' && t.status !== 'under_review')) {
+                    showToast('فقط گزارش‌های در انتظار یا تحت بررسی قابل ویرایش هستند', 'error');
+                    return;
+                }
+                editTicketId.value = ticketId;
+                editCustName.value = t.customerName || '';
+                editCustType.value = t.customerType || 'مشتری فامیلی';
+                editCustId.value = t.customerId || '';
+                editProbType.value = t.problemType || '';
+                editPriority.value = t.priority || 'normal';
+                editRepDate.value = t.createdAt || getToday();
+                editAddress.value = t.address || '';
+                editNote.value = t.note || '';
+                editReportModal.style.display = 'flex';
+            };
+            window.closeEditModal = () => { editReportModal.style.display = 'none'; };
+            editReportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const ticketId = editTicketId.value;
+                if (!ticketId) return;
+                if (currentUserRole !== 'admin') { showToast('فقط ادمین مجاز به ویرایش است', 'error'); return; }
+                const snap = await database.ref(`tickets/${ticketId}`).once('value');
+                const currentTicket = snap.val();
+                if (!currentTicket || (currentTicket.status !== 'pending' && currentTicket.status !==
+                        'under_review')) {
+                    showToast('این گزارش دیگر قابل ویرایش نیست', 'error');
+                    closeEditModal();
+                    return;
+                }
+                const updates = {
+                    customerName: editCustName.value.trim(),
+                    customerType: editCustType.value,
+                    customerId: editCustId.value.trim() || null,
+                    problemType: editProbType.value,
+                    priority: editPriority.value,
+                    createdAt: editRepDate.value,
+                    address: editAddress.value.trim() || null,
+                    note: editNote.value.trim() || null
+                };
+                await database.ref(`tickets/${ticketId}`).update(updates);
+                showToast('گزارش با موفقیت ویرایش شد', 'success');
+                closeEditModal();
+            });
+
+            async function loadUsersList() {
+                if (currentUserRole !== 'admin') return;
+                const snap = await database.ref('users').once('value');
+                const users = snap.val() || {};
+                let html = '';
+                for (const [uid, info] of Object.entries(users)) {
+                    const email = info.email,
+                        role = info.role || 'viewer';
+                    const name = [info.firstName, info.lastName].filter(Boolean).join(' ') || '—';
+                    const rolePersian = role === 'admin' ? 'ادمین' : (role === 'technician' ? 'کارمند فنی' :
+                        'مشاهده‌گر');
+                    html +=
+                        `<div class="user-list-item"><span><i class="fas fa-user"></i> <strong>${escapeHtml(name)}</strong> (${escapeHtml(email)}) - ${rolePersian}</span>
+                    <div><select data-uid="${uid}" class="role-select-small" style="padding:8px; border-radius:30px; font-family:inherit;"><option value="admin" ${role==='admin'?'selected':''}>ادمین</option><option value="technician" ${role==='technician'?'selected':''}>کارمند فنی</option><option value="viewer" ${role==='viewer'?'selected':''}>مشاهده‌گر</option></select>
+                    <button class="btn-outline btn-sm update-role" data-uid="${uid}"><i class="fas fa-save"></i> اعمال</button></div></div>`;
+                }
+                usersListContainer.innerHTML = html || '<div class="empty-message">هیچ کاربری نیست</div>';
+                document.querySelectorAll('.update-role').forEach(btn => btn.addEventListener('click', async () => {
+                    const uid = btn.dataset.uid;
+                    const select = document.querySelector(`.role-select-small[data-uid="${uid}"]`);
+                    await database.ref(`users/${uid}/role`).set(select.value);
+                    loadUsersList();
+                    await populateAssignedToFilter();
+                    if (currentUser && currentUser.uid === uid) { currentUserRole = select.value;
+                        updateUiByRole(); }
+                }));
+            }
+            createUserBtn.addEventListener('click', async () => {
+                if (currentUserRole !== 'admin') { createUserMsg.textContent = 'فقط ادمین'; return; }
+                const email = newUserEmail.value.trim(),
+                    password = newUserPass.value.trim(),
+                    role = newUserRole.value;
+                const firstName = newUserFirstname.value.trim(),
+                    lastName = newUserLastname.value.trim();
+                if (!email || !password) { createUserMsg.textContent = 'ایمیل و رمز را وارد کنید'; return; }
+                if (password.length < 6) { createUserMsg.textContent = 'رمز حداقل ۶ کاراکتر'; return; }
+                try {
+                    const userCred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+                    await database.ref(`users/${userCred.user.uid}`).set({
+                        email,
+                        role,
+                        firstName: firstName || null,
+                        lastName: lastName || null,
+                        createdAt: new Date().toISOString()
+                    });
+                    createUserMsg.innerHTML = `✅ کاربر ${email} ساخته شد.`;
+                    newUserEmail.value = '';
+                    newUserPass.value = '';
+                    newUserFirstname.value = '';
+                    newUserLastname.value = '';
+                    await secondaryAuth.signOut();
+                    loadUsersList();
+                    await populateAssignedToFilter();
+                } catch (err) { createUserMsg.textContent = err.message; }
+            });
+
+            changePasswordBtn.addEventListener('click', async () => {
+                const oldPass = oldPasswordInput.value;
+                const newPass = newPasswordInput.value;
+                const confirmPass = confirmPasswordInput.value;
+                if (!oldPass || !newPass || !confirmPass) { passwordChangeMsg.textContent =
+                        'همه فیلدها را پر کنید'; return; }
+                if (newPass.length < 6) { passwordChangeMsg.textContent = 'رمز جدید حداقل ۶ کاراکتر باشد'; return; }
+                if (newPass !== confirmPass) { passwordChangeMsg.textContent =
+                        'رمز جدید و تکرار آن مطابقت ندارند'; return; }
+                const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, oldPass);
+                try {
+                    await currentUser.reauthenticateWithCredential(credential);
+                    await currentUser.updatePassword(newPass);
+                    passwordChangeMsg.innerHTML = '✅ رمز عبور با موفقیت تغییر کرد.';
+                    oldPasswordInput.value = newPasswordInput.value = confirmPasswordInput.value = '';
+                    showToast('رمز عبور تغییر یافت', 'success');
+                } catch (err) { passwordChangeMsg.textContent = 'خطا: رمز فعلی اشتباه است یا مشکل اتصال'; }
+            });
+
+            function updateUiByRole() {
+                const roleText = currentUserRole === 'admin' ? 'ادمین' : (currentUserRole === 'technician' ?
+                    'کارمند فنی' : 'مشاهده‌گر');
+                displayRoleSpan.textContent = roleText;
+                displayRoleSidebar.textContent = roleText;
+                navEmployees.style.display = currentUserRole === 'admin' ? 'flex' : 'none';
+                adminSettingsSection.style.display = currentUserRole === 'admin' ? 'block' : 'none';
+                manualPdfBtn.style.display = (currentUserRole === 'technician') ? 'none' : 'inline-flex';
+            }
+
+            function setActiveView(viewName) {
+                viewDashboard.style.display = viewName === 'dashboard' ? 'block' : 'none';
+                viewEmployees.style.display = viewName === 'employees' ? 'block' : 'none';
+                viewSettings.style.display = viewName === 'settings' ? 'block' : 'none';
+                navItems.forEach(item => item.classList.toggle('active', item.dataset.view === viewName));
+                if (viewName === 'employees') loadUsersList();
+                if (viewName === 'settings') { loadProblemTypes();
+                    loadResolutionCategories(); }
+                // Close mobile sidebar after navigation
+                if (window.innerWidth <= 900) sidebar.classList.remove('open');
+            }
+            navItems.forEach(item => item.addEventListener('click', () => setActiveView(item.dataset.view)));
+            authForm.addEventListener('submit', (e) => { e.preventDefault();
+                auth.signInWithEmailAndPassword(authEmail.value.trim(), authPassword.value).catch(err => authMessage
+                    .textContent = err.message); });
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    currentUserRole = await fetchUserRole(user.uid, user.email);
+                    displayEmailSpan.textContent = user.email;
+                    displayEmailSidebar.textContent = user.email;
+                    updateUiByRole();
+                    authPage.style.display = 'none';
+                    appPage.style.display = 'flex';
+                    setActiveView('dashboard');
+                    loadTicketsRealtime();
+                    if (currentUserRole === 'admin') loadUsersList();
+                    loadProblemTypes();
+                    loadResolutionCategories();
+                    database.ref('users').on('value', snap => {
+                        updateUserDisplayMap(snap.val() || {});
+                    });
+                } else {
+                    currentUser = null;
+                    authPage.style.display = 'flex';
+                    appPage.style.display = 'none';
+                    if (ticketsRef) database.ref('tickets').off();
+                }
+            });
+            logoutBtn.addEventListener('click', () => auth.signOut());
+            logoutBtnSidebar.addEventListener('click', () => auth.signOut());
+
+            async function generatePDF(tickets, filename = 'گزارش') {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                const fontUrl = 'https://cdn.jsdelivr.net/npm/vazir-font@30.1.0/dist/Vazir-Regular.ttf';
+                const fontResponse = await fetch(fontUrl);
+                const fontBlob = await fontResponse.blob();
+                const reader = new FileReader();
+                const fontBase64 = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result
+                        .split(',')[1]);
+                    reader.readAsDataURL(fontBlob); });
+                doc.addFileToVFS('Vazir-Regular.ttf', fontBase64);
+                doc.addFont('Vazir-Regular.ttf', 'Vazir', 'normal');
+                doc.setFont('Vazir');
+                const tableColumn = ["مشتری", "نوع مشتری", "آیدی", "نوع مشکل", "اولویت", "وضعیت", "تاریخ ثبت", "مسئول",
+                    "همکار", "یادداشت"
+                ];
+                const tableRows = tickets.map(t => [
+                    t.customerName || '',
+                    t.customerType || 'مشتری فامیلی',
+                    t.customerId || '',
+                    t.problemType || '',
+                    ({ normal: 'عادی', medium: 'متوسط', urgent: 'عاجل' })[t.priority] || 'عادی',
+                    t.status === 'pending' ? 'در انتظار' : (t.status === 'under_review' ? 'تحت بررسی' :
+                        'حل شده'),
+                    t.createdAt || '',
+                    getUserDisplayName(t.assignedTo) || '—',
+                    t.collaborator ? getUserDisplayName(t.collaborator) : '—',
+                    t.note || '—'
+                ]);
+                doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20, styles: { font: 'Vazir',
+                        halign: 'right', fontSize: 10 }, headStyles: { fillColor: [36, 105, 245], font: 'Vazir',
+                        halign: 'right' } });
+                doc.save(`${filename}-${new Date().toISOString().slice(0,10)}.pdf`);
+            }
+            manualPdfBtn.addEventListener('click', async () => {
+                if (currentUserRole === 'technician') { showToast('کارمندان فنی مجاز به دریافت PDF نیستند',
+                    'error'); return; }
+                const filtered = applyFilters(allTicketsArray);
+                if (filtered.length === 0) { showToast('داده‌ای برای PDF وجود ندارد', 'error'); return; }
+                await generatePDF(filtered, 'گزارش-دستی');
+                showToast('PDF با موفقیت ساخته شد', 'success');
+            });
+
+            window.addEventListener('click', (e) => {
+                if (e.target === detailsModal) closeDetailsModal();
+                if (e.target === resolveModal) closeResolveModal();
+                if (e.target === newReportModal) closeNewReportModal();
+                if (e.target === editReportModal) closeEditModal();
+            });
+            repDate.value = getToday();
+            window.closeNewReportModal = closeNewReportModal;
+            window.closeEditModal = closeEditModal;
+        })();
+    </script>
+</body>
+</html>
